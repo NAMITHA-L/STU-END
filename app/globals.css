@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Professional Black & Gold Light Theme */
+    --background: 0 0% 100%; /* White background for light mode */
+    --foreground: 0 0% 4%; /* Near black text */
+
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 0 0% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+
+    --primary: 51 100% 50%; /* Professional Gold */
+    --primary-foreground: 0 0% 4%; /* Black text on gold */
+
+    --secondary: 0 0% 75%; /* Professional Silver */
+    --secondary-foreground: 0 0% 4%;
+
+    --muted: 0 0% 96%; /* Very light grey */
+    --muted-foreground: 0 0% 35%; /* Darker grey for better legibility */
+
+    --accent: 51 100% 50%; /* Gold accent */
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%; /* Light grey borders */
+    --input: 0 0% 90%;
+    --ring: 51 100% 50%; /* Gold focus ring */
+
+    --radius: 0.5rem; /* Professional rounded corners */
+
+    --sidebar: 0 0% 98%; /* Very light grey sidebar */
+    --sidebar-foreground: 0 0% 4%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 51 100% 50%;
+    --sidebar-accent: 51 100% 95%; /* Very light gold */
+    --sidebar-accent-foreground: 0 0% 4%;
+
+    --chart-1: 51 100% 50%; /* Gold */
+    --chart-2: 0 0% 75%; /* Silver */
+  }
+
+  .dark {
+    /* Professional Black & Gold Dark Theme */
+    --background: 0 0% 4%; /* Professional black background */
+    --foreground: 0 0% 95%; /* Light text */
+
+    --card: 0 0% 6%; /* Slightly lighter black for cards */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 51 100% 50%; /* Professional Gold */
+    --primary-foreground: 0 0% 4%; /* Black text on gold */
+
+    --secondary: 0 0% 75%; /* Professional Silver */
+    --secondary-foreground: 0 0% 4%;
+
+    --muted: 0 0% 12%; /* Dark grey */
+    --muted-foreground: 0 0% 75%; /* Much lighter grey for better legibility in dark mode */
+
+    --accent: 51 100% 50%; /* Gold accent */
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%; /* Dark grey borders */
+    --input: 0 0% 15%;
+    --ring: 51 100% 50%; /* Gold focus ring */
+
+    --sidebar: 0 0% 4%; /* Professional black sidebar */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 51 100% 50%;
+    --sidebar-accent: 0 0% 8%; /* Slightly lighter black */
+    --sidebar-accent-foreground: 0 0% 95%;
+
+    --chart-1: 51 100% 50%; /* Gold */
+    --chart-2: 0 0% 75%; /* Silver */
+  }
+
+  /* Professional Accent Color Themes */
+  .theme-silver {
+    --primary: 0 0% 75%; /* Silver */
+    --ring: 0 0% 75%;
+    --accent: 0 0% 75%;
+  }
+
+  .theme-white {
+    --primary: 0 0% 100%; /* White */
+    --ring: 0 0% 100%;
+    --accent: 0 0% 100%;
+  }
+
+  .theme-gold {
+    --primary: 51 100% 50%; /* Gold */
+    --ring: 51 100% 50%;
+    --accent: 51 100% 50%;
+  }
+
+  .theme-silver-pink {
+    --primary: 0 15% 85%; /* Silver Pink */
+    --ring: 0 15% 85%;
+    --accent: 0 15% 85%;
+  }
+
+  .theme-silver-blue {
+    --primary: 200 25% 80%; /* Silver Blue */
+    --ring: 200 25% 80%;
+    --accent: 200 25% 80%;
+  }
+
+  .theme-platinum {
+    --primary: 60 5% 90%; /* Platinum */
+    --ring: 60 5% 90%;
+    --accent: 60 5% 90%;
+  }
+
+  .theme-charcoal {
+    --primary: 210 15% 25%; /* Charcoal */
+    --ring: 210 15% 25%;
+    --accent: 210 15% 25%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  }
+}
+
+/* Professional scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ffd700, #ffa500);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #ffa500, #ffd700);
+}
+
+/* Professional glass effect */
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+/* Professional shadow effects */
+.professional-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.professional-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.gold-shadow {
+  box-shadow: 0 4px 6px -1px rgba(255, 215, 0, 0.2), 0 2px 4px -1px rgba(255, 215, 0, 0.1);
+}
