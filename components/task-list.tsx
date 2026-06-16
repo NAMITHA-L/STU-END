@@ -199,11 +199,15 @@ export default function TaskList() {
                         <span className="text-sm font-mono">{formatTime(timerSeconds)}</span>
                         <Tooltip>
                           <TooltipTrigger>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleTimer(task.id)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => toggleTimer(task.id)}
+                            >
                               <Timer className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-
                           <TooltipContent>
                             <p>Stop Pomodoro timer</p>
                           </TooltipContent>
@@ -216,7 +220,6 @@ export default function TaskList() {
                             <Timer className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-
                         <TooltipContent>
                           <p>Start 25-minute Pomodoro timer</p>
                         </TooltipContent>
