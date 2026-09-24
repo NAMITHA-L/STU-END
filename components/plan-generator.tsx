@@ -149,13 +149,23 @@ export default function PlanGenerator() {
   }
 
   const generatePlan = () => {
-    if (subjects.length === 0 || availableHours <= 0) return
+    if (subjects.length === 0 || availableHours <= 0) {
+      toast({ title: "Add subjects first", description: "Create at least one subject before generating a plan.", variant: "destructive" })
+      return
+    }
 
     const sortedSubjects = [...subjects].sort((a, b) => b.priority - a.priority)
     const totalPriority = sortedSubjects.reduce((sum, subject) => sum + subject.priority, 0)
 
     const plan: PlanSlot[] = []
-    let startHour = 9
+    const now = new Date()
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const roundedStartMinutes = Math.max(9 * 60, Math.ceil(currentMinutes / 30) * 30)
+    if (roundedStartMinutes >= 22 * 60) {
+      toast({ title: "No planning time left today", description: "Create a plan tomorrow or reduce the requested hours.", variant: "destructive" })
+      return
+    }
+    let startHour = roundedStartMinutes / 60
 
     sortedSubjects.forEach((subject) => {
       const subjectHours = Math.max(0.5, Math.round((subject.priority / totalPriority) * availableHours * 2) / 2)
@@ -232,12 +242,20 @@ export default function PlanGenerator() {
     }
   }
 
-  const savePlan = () => {
-    setShowPlanPreview(false)
-    toast({
-      title: "Professional Plan Saved",
-      description: "Your optimized study schedule is now active.",
+  const savePlan = async () => {
+    const date = new Date()
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+    const response = await fetch("/api/schedules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: dateKey, slots: generatedPlan.map((slot) => ({ title: slot.subject, start: slot.start, end: slot.end, color: slot.color, priority: slot.priority })) }),
     })
+    if (!response.ok) {
+      toast({ title: "Could not save plan", description: "Check the database connection and try again.", variant: "destructive" })
+      return
+    }
+    setShowPlanPreview(false)
+    toast({ title: "Plan saved", description: "The timetable now uses this plan for today." })
   }
 
   const enableEditMode = () => {

@@ -34,35 +34,13 @@ import {
 } from "recharts"
 
 // Sample data for weekly streak
-const streakData = [
-  { day: "Mon", completed: 5, total: 5 },
-  { day: "Tue", completed: 4, total: 5 },
-  { day: "Wed", completed: 5, total: 5 },
-  { day: "Thu", completed: 3, total: 5 },
-  { day: "Fri", completed: 5, total: 5 },
-  { day: "Sat", completed: 2, total: 3 },
-  { day: "Sun", completed: 1, total: 2 },
-]
+const streakData: { day: string; completed: number; total: number }[] = []
 
 // Sample data for subject time with yellow shades
-const subjectTimeData = [
-  { name: "Data Structures", hours: 8, color: "#FFD700" }, // Gold
-  { name: "Machine Learning", hours: 6, color: "#FFA500" }, // Orange
-  { name: "Web Development", hours: 5, color: "#FFFF00" }, // Yellow
-  { name: "System Design", hours: 4, color: "#FFFFE0" }, // Light Yellow
-  { name: "Mathematics", hours: 3, color: "#F0E68C" }, // Khaki
-]
+const subjectTimeData: { name: string; hours: number; color: string }[] = []
 
 // Sample data for completion rate
-const completionRateData = [
-  { day: "Mon", rate: 100 },
-  { day: "Tue", rate: 80 },
-  { day: "Wed", rate: 100 },
-  { day: "Thu", rate: 60 },
-  { day: "Fri", rate: 100 },
-  { day: "Sat", rate: 67 },
-  { day: "Sun", rate: 50 },
-]
+const completionRateData: { day: string; rate: number }[] = []
 
 // Custom label component for pie chart with dark orange text
 const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
@@ -87,12 +65,10 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, n
 }
 
 export default function ProgressAnalytics() {
-  const currentStreak = 5
-  const totalHours = subjectTimeData.reduce((sum, subject) => sum + subject.hours, 0)
-  const averageCompletionRate = Math.round(
-    completionRateData.reduce((sum, day) => sum + day.rate, 0) / completionRateData.length,
-  )
-  const mostMissedSubject = "System Design"
+  const currentStreak = 0
+  const totalHours = 0
+  const averageCompletionRate = 0
+  const mostMissedSubject = "No data yet"
 
   return (
     <TooltipProvider>

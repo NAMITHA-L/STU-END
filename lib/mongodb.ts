@@ -26,6 +26,11 @@ export async function getTasksCollection() {
   return connectedClient.db("studyplan").collection<TaskDocument>("tasks")
 }
 
+export async function getSchedulesCollection() {
+  const connectedClient = await getClientPromise()
+  return connectedClient.db("studyplan").collection("schedules")
+}
+
 export interface TaskDocument {
   _id?: import("mongodb").ObjectId
   title: string

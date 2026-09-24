@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Coffee, BookOpen } from "lucide-react"
@@ -448,6 +448,11 @@ const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 export default function WeeklyTimetable() {
   const [currentWeek, setCurrentWeek] = useState(0)
+  const [savedSlots, setSavedSlots] = useState<Array<{ date: string; title: string; start: string; end: string; color: string }>>([])
+
+  useEffect(() => {
+    fetch("/api/schedules", { cache: "no-store" }).then((response) => response.ok ? response.json() : []).then(setSavedSlots)
+  }, [])
 
   const goToPreviousWeek = () => {
     setCurrentWeek(currentWeek - 1)
@@ -469,9 +474,14 @@ export default function WeeklyTimetable() {
 
   const weekDates = getWeekDates()
 
-  const weeklyData: Record<string, TimeSlot[]> = Object.fromEntries(
-    Object.keys(demoWeeklyData).map((day) => [day, []]),
-  )
+  const weeklyData: Record<string, TimeSlot[]> = useMemo(() => {
+    const result: Record<string, TimeSlot[]> = Object.fromEntries(days.map((day) => [day, []]))
+    savedSlots.forEach((slot) => {
+      const day = new Date(`${slot.date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long" })
+      if (result[day]) result[day].push({ id: `${slot.date}-${slot.title}-${slot.start}`, subject: slot.title, start: slot.start, end: slot.end, type: "study", color: slot.color })
+    })
+    return result
+  }, [savedSlots])
 
   // Generate dynamic time slots based on actual data
   const generateTimeSlots = () => {
@@ -541,7 +551,9 @@ export default function WeeklyTimetable() {
             ))}
 
             {/* Time slots */}
-            {timeSlots.map((time) => (
+            {timeSlots.length === 0 ? (
+              <div className="col-span-8 p-10 text-center text-muted-foreground">No saved schedule yet. Generate and save a plan to see it here.</div>
+            ) : timeSlots.map((time) => (
               <React.Fragment key={time}>
                 <div className="p-3 text-sm font-semibold text-center border-r-2 border-primary/10 bg-secondary/5">
                   {time}
