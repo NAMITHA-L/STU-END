@@ -19,7 +19,7 @@ interface TimeSlot {
 }
 
 // Sample weekly data with 5 subjects per day + breaks
-const weeklyData: Record<string, TimeSlot[]> = {
+const demoWeeklyData: Record<string, TimeSlot[]> = {
   Monday: [
     {
       id: "1",
@@ -468,6 +468,10 @@ export default function WeeklyTimetable() {
   }
 
   const weekDates = getWeekDates()
+
+  const weeklyData: Record<string, TimeSlot[]> = Object.fromEntries(
+    Object.keys(demoWeeklyData).map((day) => [day, []]),
+  )
 
   // Generate dynamic time slots based on actual data
   const generateTimeSlots = () => {

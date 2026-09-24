@@ -64,7 +64,7 @@ export function taskPayload(value: Pick<TaskDocument, "title" | "subject" | "pri
 }
 
 export function isObjectId(value: string) {
-  return /^[a-f\\d]{24}$/i.test(value)
+  return /^[a-f\d]{24}$/i.test(value)
 }
 
 export { ObjectId } from "mongodb"

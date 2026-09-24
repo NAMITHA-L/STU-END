@@ -21,13 +21,7 @@ interface TimeSlot {
 }
 
 // Sample data
-const initialEvents: TimeSlot[] = [
-  { id: "1", title: "DSA Practice", start: "09:00", end: "10:00", color: "bg-blue-100 border-blue-300" },
-  { id: "2", title: "System Design", start: "10:30", end: "12:00", color: "bg-purple-100 border-purple-300" },
-  { id: "3", title: "Lunch Break", start: "12:00", end: "13:00", color: "bg-amber-100 border-amber-300" },
-  { id: "4", title: "Frontend Development", start: "13:30", end: "15:30", color: "bg-green-100 border-green-300" },
-  { id: "5", title: "Exercise", start: "16:00", end: "17:00", color: "bg-red-100 border-red-300" },
-]
+const initialEvents: TimeSlot[] = []
 
 // Generate time slots for the day
 const timeSlots = Array.from({ length: 14 }, (_, i) => {

@@ -38,11 +38,7 @@ interface PlanSlot {
 
 export default function PlanGenerator() {
   const { toast } = useToast()
-  const [subjects, setSubjects] = useState<Subject[]>([
-    { id: "1", name: "Data Structures & Algorithms", priority: 5, color: "bg-professional-gold text-black" },
-    { id: "2", name: "Machine Learning", priority: 3, color: "bg-professional-silver text-black" },
-    { id: "3", name: "Web Development", priority: 4, color: "bg-professional-charcoal text-white" },
-  ])
+  const [subjects, setSubjects] = useState<Subject[]>([])
 
   const [newSubject, setNewSubject] = useState("")
   const [newPriority, setNewPriority] = useState(3)
