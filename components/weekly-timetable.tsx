@@ -451,7 +451,17 @@ export default function WeeklyTimetable() {
   const [savedSlots, setSavedSlots] = useState<Array<{ date: string; title: string; start: string; end: string; color: string }>>([])
 
   useEffect(() => {
-    fetch("/api/schedules", { cache: "no-store" }).then((response) => response.ok ? response.json() : []).then(setSavedSlots)
+    Promise.all([
+      fetch("/api/schedules", { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
+      fetch("/api/tasks", { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
+    ]).then(([schedules, tasks]) => {
+      const taskSlots = tasks.filter((task: { dueDate?: string; dueTime?: string; title?: string }) => task.dueDate && task.dueTime && task.title).map((task: { dueDate: string; dueTime: string; title: string }) => {
+        const [hour, minute] = task.dueTime.split(":").map(Number)
+        const endMinutes = Math.min(hour * 60 + minute + 60, 23 * 60 + 59)
+        return { date: task.dueDate, title: task.title, start: task.dueTime, end: `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`, color: "bg-primary/10 border-primary text-foreground" }
+      })
+      setSavedSlots([...schedules, ...taskSlots])
+    })
   }, [])
 
   const goToPreviousWeek = () => {
@@ -462,26 +472,27 @@ export default function WeeklyTimetable() {
     setCurrentWeek(currentWeek + 1)
   }
 
-  const getWeekDates = () => {
+  const getWeekDateObjects = () => {
     const today = new Date()
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1 + currentWeek * 7))
-    return days.map((_, index) => {
-      const date = new Date(startOfWeek)
-      date.setDate(startOfWeek.getDate() + index)
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-    })
+    const startOfWeek = new Date(today)
+    const day = startOfWeek.getDay()
+    startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1) + currentWeek * 7)
+    return days.map((_, index) => { const date = new Date(startOfWeek); date.setDate(startOfWeek.getDate() + index); return date })
   }
 
-  const weekDates = getWeekDates()
+  const weekDateObjects = getWeekDateObjects()
+  const weekDates = weekDateObjects.map((date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric" }))
+  const weekDateKeys = weekDateObjects.map((date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`)
 
   const weeklyData: Record<string, TimeSlot[]> = useMemo(() => {
     const result: Record<string, TimeSlot[]> = Object.fromEntries(days.map((day) => [day, []]))
     savedSlots.forEach((slot) => {
-      const day = new Date(`${slot.date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long" })
+      const dayIndex = weekDateKeys.indexOf(slot.date)
+      const day = dayIndex >= 0 ? days[dayIndex] : ""
       if (result[day]) result[day].push({ id: `${slot.date}-${slot.title}-${slot.start}`, subject: slot.title, start: slot.start, end: slot.end, type: "study", color: slot.color })
     })
     return result
-  }, [savedSlots])
+  }, [savedSlots, weekDateKeys.join(",")])
 
   // Generate dynamic time slots based on actual data
   const generateTimeSlots = () => {

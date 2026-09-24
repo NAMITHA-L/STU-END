@@ -18,8 +18,8 @@ import { toast } from "sonner"
 type Priority = "high" | "medium" | "low"
 type Task = { id: string; title: string; subject: string; priority: Priority; completed: boolean; dueDate: string; dueTime: string }
 
-const today = () => new Date().toISOString().slice(0, 10)
-const blankTask = () => ({ title: "", subject: "", priority: "medium" as Priority, dueDate: today(), dueTime: "09:00" })
+const today = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` }
+const blankTask = () => { const now = new Date(); const roundedMinutes = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 30) * 30; const dueMinutes = Math.min(roundedMinutes, 23 * 60 + 30); return { title: "", subject: "", priority: "medium" as Priority, dueDate: today(), dueTime: `${String(Math.floor(dueMinutes / 60)).padStart(2, "0")}:${String(dueMinutes % 60).padStart(2, "0")}` } }
 
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
