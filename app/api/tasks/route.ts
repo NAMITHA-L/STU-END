@@ -3,9 +3,12 @@ import { getTasksCollection, isValidTaskPayload, serializeTask, taskPayload } fr
 
 export async function GET(request: NextRequest) {
   try {
-    const date = request.nextUrl.searchParams.get("date")
+    const params = request.nextUrl.searchParams
+    const date = params.get("date")
+    const from = params.get("from")
+    const to = params.get("to")
     const collection = await getTasksCollection()
-    const filter = date ? { dueDate: date } : {}
+    const filter = date ? { dueDate: date } : from && to ? { dueDate: { $gte: from, $lte: to } } : {}
     const tasks = await collection.find(filter).sort({ dueDate: 1, dueTime: 1, createdAt: 1 }).toArray()
     return NextResponse.json(tasks.map(serializeTask))
   } catch (error) {

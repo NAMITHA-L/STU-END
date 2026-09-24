@@ -8,9 +8,13 @@ function serialize(item: Record<string, unknown>) { return { ...item, id: String
 
 export async function GET(request: NextRequest) {
   try {
-    const date = request.nextUrl.searchParams.get("date")
+    const params = request.nextUrl.searchParams
+    const date = params.get("date")
+    const from = params.get("from")
+    const to = params.get("to")
     const collection = await getSchedulesCollection()
-    const items = await collection.find(date && validDate(date) ? { date } : {}).sort({ date: 1, start: 1 }).toArray()
+    const filter = date && validDate(date) ? { date } : from && to && validDate(from) && validDate(to) ? { date: { $gte: from, $lte: to } } : {}
+    const items = await collection.find(filter).sort({ date: 1, start: 1 }).toArray()
     return NextResponse.json(items.map((item) => serialize(item)))
   } catch (error) {
     console.error("[schedules] GET failed", error)

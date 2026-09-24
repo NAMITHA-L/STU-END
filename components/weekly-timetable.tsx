@@ -449,47 +449,41 @@ const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 export default function WeeklyTimetable() {
   const [currentWeek, setCurrentWeek] = useState(0)
   const [savedSlots, setSavedSlots] = useState<Array<{ date: string; title: string; start: string; end: string; color: string }>>([])
+  const weekDateObjects = useMemo(() => {
+    const start = new Date()
+    const day = start.getDay()
+    start.setDate(start.getDate() - (day === 0 ? 6 : day - 1) + currentWeek * 7)
+    return days.map((_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return date })
+  }, [currentWeek])
+  const weekDateKeys = weekDateObjects.map((date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`)
+  const weekDates = weekDateObjects.map((date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric" }))
+
+  const goToPreviousWeek = () => setCurrentWeek((week) => week - 1)
+  const goToNextWeek = () => setCurrentWeek((week) => week + 1)
 
   useEffect(() => {
+    let cancelled = false
+    const from = weekDateKeys[0]
+    const to = weekDateKeys[6]
     Promise.all([
-      fetch("/api/schedules", { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
-      fetch("/api/tasks", { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
+      fetch(`/api/schedules?from=${from}&to=${to}`, { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
+      fetch(`/api/tasks?from=${from}&to=${to}`, { cache: "no-store" }).then((response) => response.ok ? response.json() : []),
     ]).then(([schedules, tasks]) => {
       const taskSlots = tasks.filter((task: { dueDate?: string; dueTime?: string; title?: string }) => task.dueDate && task.dueTime && task.title).map((task: { dueDate: string; dueTime: string; title: string }) => {
         const [hour, minute] = task.dueTime.split(":").map(Number)
         const endMinutes = Math.min(hour * 60 + minute + 60, 23 * 60 + 59)
         return { date: task.dueDate, title: task.title, start: task.dueTime, end: `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`, color: "bg-primary/10 border-primary text-foreground" }
       })
-      setSavedSlots([...schedules, ...taskSlots])
+      if (!cancelled) setSavedSlots([...schedules, ...taskSlots])
     })
-  }, [])
+    return () => { cancelled = true }
+  }, [weekDateKeys.join(",")])
 
-  const goToPreviousWeek = () => {
-    setCurrentWeek(currentWeek - 1)
-  }
-
-  const goToNextWeek = () => {
-    setCurrentWeek(currentWeek + 1)
-  }
-
-  const getWeekDateObjects = () => {
-    const today = new Date()
-    const startOfWeek = new Date(today)
-    const day = startOfWeek.getDay()
-    startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1) + currentWeek * 7)
-    return days.map((_, index) => { const date = new Date(startOfWeek); date.setDate(startOfWeek.getDate() + index); return date })
-  }
-
-  const weekDateObjects = getWeekDateObjects()
-  const weekDates = weekDateObjects.map((date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric" }))
-  const weekDateKeys = weekDateObjects.map((date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`)
-
-  const weeklyData: Record<string, TimeSlot[]> = useMemo(() => {
+  const weeklyData = useMemo(() => {
     const result: Record<string, TimeSlot[]> = Object.fromEntries(days.map((day) => [day, []]))
     savedSlots.forEach((slot) => {
       const dayIndex = weekDateKeys.indexOf(slot.date)
-      const day = dayIndex >= 0 ? days[dayIndex] : ""
-      if (result[day]) result[day].push({ id: `${slot.date}-${slot.title}-${slot.start}`, subject: slot.title, start: slot.start, end: slot.end, type: "study", color: slot.color })
+      if (dayIndex >= 0) result[days[dayIndex]].push({ id: `${slot.date}-${slot.title}-${slot.start}`, subject: slot.title, start: slot.start, end: slot.end, type: "study", color: slot.color })
     })
     return result
   }, [savedSlots, weekDateKeys.join(",")])

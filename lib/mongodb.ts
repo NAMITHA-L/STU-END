@@ -21,13 +21,32 @@ function getClientPromise() {
   return clientPromise
 }
 
+declare global {
+  var _mongoIndexesPromise: Promise<void> | undefined
+}
+
+async function ensureIndexes() {
+  if (global._mongoIndexesPromise) return global._mongoIndexesPromise
+  global._mongoIndexesPromise = (async () => {
+    const connectedClient = await getClientPromise()
+    const db = connectedClient.db("studyplan")
+    await Promise.all([
+      db.collection<TaskDocument>("tasks").createIndex({ dueDate: 1, dueTime: 1 }),
+      db.collection("schedules").createIndex({ date: 1, start: 1 }),
+    ])
+  })()
+  return global._mongoIndexesPromise
+}
+
 export async function getTasksCollection() {
   const connectedClient = await getClientPromise()
+  await ensureIndexes()
   return connectedClient.db("studyplan").collection<TaskDocument>("tasks")
 }
 
 export async function getSchedulesCollection() {
   const connectedClient = await getClientPromise()
+  await ensureIndexes()
   return connectedClient.db("studyplan").collection("schedules")
 }
 
