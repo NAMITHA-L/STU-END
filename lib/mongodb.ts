@@ -1,20 +1,28 @@
 import { MongoClient } from "mongodb"
 
-const uri = process.env.MONGODB_URI
-
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-const client = new MongoClient(uri)
-const clientPromise = global._mongoClientPromise ?? client.connect()
+function getClientPromise() {
+  const uri = process.env.MONGODB_URI
+  if (!uri) {
+    throw new Error("MONGODB_URI is not configured")
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  global._mongoClientPromise = clientPromise
+  if (global._mongoClientPromise) {
+    return global._mongoClientPromise
+  }
+
+  const clientPromise = new MongoClient(uri).connect()
+  if (process.env.NODE_ENV !== "production") {
+    global._mongoClientPromise = clientPromise
+  }
+  return clientPromise
 }
 
 export async function getTasksCollection() {
-  const connectedClient = await clientPromise
+  const connectedClient = await getClientPromise()
   return connectedClient.db("studyplan").collection<TaskDocument>("tasks")
 }
 
