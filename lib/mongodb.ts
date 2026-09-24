@@ -39,6 +39,8 @@ export interface TaskDocument {
   dueDate: string
   dueTime: string
   completed: boolean
+  skipped?: boolean
+  completedAt?: Date
   createdAt: Date
   updatedAt: Date
 }

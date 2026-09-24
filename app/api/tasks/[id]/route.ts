@@ -8,7 +8,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json()
     const collection = await getTasksCollection()
     const update: Record<string, unknown> = { updatedAt: new Date() }
-    if (typeof body.completed === "boolean") update.completed = body.completed
+    if (typeof body.completed === "boolean") { update.completed = body.completed; update.skipped = false; update.completedAt = body.completed ? new Date() : null }
+    if (typeof body.skipped === "boolean" && !body.completed) update.skipped = body.skipped
     if (body.title !== undefined || body.subject !== undefined || body.priority !== undefined || body.dueDate !== undefined || body.dueTime !== undefined) {
       if (!isValidTaskPayload(body)) return NextResponse.json({ error: "Invalid task data" }, { status: 400 })
       Object.assign(update, taskPayload(body))

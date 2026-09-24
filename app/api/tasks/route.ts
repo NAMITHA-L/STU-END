@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (!isValidTaskPayload(body)) return NextResponse.json({ error: "Invalid task data" }, { status: 400 })
     const now = new Date()
     const collection = await getTasksCollection()
-    const result = await collection.insertOne({ ...taskPayload(body), completed: false, createdAt: now, updatedAt: now })
+    const result = await collection.insertOne({ ...taskPayload(body), completed: false, skipped: false, createdAt: now, updatedAt: now })
     const task = await collection.findOne({ _id: result.insertedId })
     return NextResponse.json(serializeTask(task!), { status: 201 })
   } catch (error) {

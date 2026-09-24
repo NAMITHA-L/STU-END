@@ -160,7 +160,7 @@ export default function PlanGenerator() {
     const plan: PlanSlot[] = []
     const now = new Date()
     const currentMinutes = now.getHours() * 60 + now.getMinutes()
-    const roundedStartMinutes = Math.max(9 * 60, Math.ceil(currentMinutes / 30) * 30)
+    const roundedStartMinutes = Math.ceil(currentMinutes / 30) * 30
     if (roundedStartMinutes >= 22 * 60) {
       toast({ title: "No planning time left today", description: "Create a plan tomorrow or reduce the requested hours.", variant: "destructive" })
       return

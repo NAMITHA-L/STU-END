@@ -497,6 +497,7 @@ export default function WeeklyTimetable() {
   // Generate dynamic time slots based on actual data
   const generateTimeSlots = () => {
     const allSlots = Object.values(weeklyData).flat()
+    if (allSlots.length === 0) return []
     const startTimes = allSlots.map((slot) => Number.parseInt(slot.start.split(":")[0]))
     const endTimes = allSlots.map((slot) => Number.parseInt(slot.end.split(":")[0]))
 
