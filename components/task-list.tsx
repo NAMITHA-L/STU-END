@@ -1,249 +1,83 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Flame, Clock, Timer, MoreHorizontal } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Flame, Clock, Timer, MoreHorizontal, Plus, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import CelebrationPopup from "@/components/celebration-popup"
+import { toast } from "sonner"
 
-// Define task type
-interface Task {
-  id: string
-  title: string
-  subject: string
-  priority: "high" | "medium" | "low"
-  completed: boolean
-  dueTime: string
-}
+type Priority = "high" | "medium" | "low"
+type Task = { id: string; title: string; subject: string; priority: Priority; completed: boolean; dueDate: string; dueTime: string }
 
-// Sample tasks
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    title: "Complete DSA assignment",
-    subject: "Data Structures",
-    priority: "high",
-    completed: false,
-    dueTime: "10:00",
-  },
-  {
-    id: "2",
-    title: "Review ML algorithms",
-    subject: "Machine Learning",
-    priority: "medium",
-    completed: false,
-    dueTime: "12:00",
-  },
-  {
-    id: "3",
-    title: "Prepare presentation",
-    subject: "System Design",
-    priority: "high",
-    completed: false,
-    dueTime: "15:30",
-  },
-  {
-    id: "4",
-    title: "Fix CSS bugs",
-    subject: "Web Development",
-    completed: true,
-    priority: "low",
-    dueTime: "14:00",
-  },
-  {
-    id: "5",
-    title: "Read research paper",
-    subject: "Machine Learning",
-    priority: "medium",
-    completed: true,
-    dueTime: "17:00",
-  },
-]
+const today = () => new Date().toISOString().slice(0, 10)
+const blankTask = () => ({ title: "", subject: "", priority: "medium" as Priority, dueDate: today(), dueTime: "09:00" })
 
 export default function TaskList() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks)
+  const [tasks, setTasks] = useState<Task[]>([])
   const [activeTab, setActiveTab] = useState("pending")
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60) // 25 minutes in seconds
+  const [timerSeconds, setTimerSeconds] = useState(25 * 60)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(blankTask)
+  const [loading, setLoading] = useState(true)
 
-  // Toggle task completion
-  const toggleTaskCompletion = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId)
-    if (task && !task.completed) {
-      // Show celebration for newly completed tasks
-      setShowCelebration(true)
-    }
-    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)))
+  const loadTasks = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/tasks?date=${today()}`, { cache: "no-store" })
+      if (!response.ok) throw new Error("Unable to load tasks")
+      setTasks(await response.json())
+    } catch { toast.error("Could not load today’s tasks") } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { void loadTasks() }, [loadTasks])
+  useEffect(() => {
+    if (!activeTimer) return
+    const interval = window.setInterval(() => setTimerSeconds((seconds) => seconds <= 1 ? 0 : seconds - 1), 1000)
+    return () => window.clearInterval(interval)
+  }, [activeTimer])
+
+  const saveTask = async () => {
+    if (!form.title.trim() || !form.subject.trim()) return toast.error("Add a task title and subject")
+    const response = await fetch(editingId ? `/api/tasks/${editingId}` : "/api/tasks", { method: editingId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
+    if (!response.ok) return toast.error("Could not save task")
+    const saved: Task = await response.json()
+    setTasks((current) => editingId ? current.map((task) => task.id === saved.id ? saved : task) : [...current, saved].sort((a, b) => a.dueTime.localeCompare(b.dueTime)))
+    setDialogOpen(false); setEditingId(null); setForm(blankTask()); toast.success(editingId ? "Task updated" : "Task added")
   }
 
-  // Get priority icon with tooltip
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <Flame className="h-4 w-4 text-red-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>High priority task</p>
-            </TooltipContent>
-          </Tooltip>
-        )
-      case "medium":
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <Clock className="h-4 w-4 text-amber-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Medium priority task</p>
-            </TooltipContent>
-          </Tooltip>
-        )
-      default:
-        return null
-    }
+  const updateCompletion = async (task: Task) => {
+    const response = await fetch(`/api/tasks/${task.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...task, completed: !task.completed }) })
+    if (!response.ok) return toast.error("Could not update task")
+    setTasks((current) => current.map((item) => item.id === task.id ? { ...item, completed: !item.completed } : item))
+    if (!task.completed) setShowCelebration(true)
   }
 
-  // Get subject color
-  const getSubjectColor = (subject: string) => {
-    switch (subject) {
-      case "Data Structures":
-        return "bg-blue-100 text-blue-800"
-      case "Machine Learning":
-        return "bg-purple-100 text-purple-800"
-      case "System Design":
-        return "bg-red-100 text-red-800"
-      case "Web Development":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+  const deleteTask = async (id: string) => {
+    const response = await fetch(`/api/tasks/${id}`, { method: "DELETE" })
+    if (!response.ok) return toast.error("Could not delete task")
+    setTasks((current) => current.filter((task) => task.id !== id)); toast.success("Task deleted")
   }
 
-  // Format timer
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+  const filteredTasks = useMemo(() => tasks.filter((task) => activeTab === "pending" ? !task.completed : task.completed), [tasks, activeTab])
+  const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`
+  const openEdit = (task: Task) => { setEditingId(task.id); setForm({ title: task.title, subject: task.subject, priority: task.priority, dueDate: task.dueDate, dueTime: task.dueTime }); setDialogOpen(true) }
 
-  // Toggle pomodoro timer
-  const toggleTimer = (taskId: string) => {
-    if (activeTimer === taskId) {
-      setActiveTimer(null)
-    } else {
-      setActiveTimer(taskId)
-      setTimerSeconds(25 * 60) // Reset to 25 minutes
-    }
-  }
-
-  // Filter tasks based on active tab
-  const filteredTasks = tasks.filter((task) => (activeTab === "pending" ? !task.completed : task.completed))
-
-  return (
-    <TooltipProvider>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Tasks</CardTitle>
-            <Tabs defaultValue="pending" onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredTasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No {activeTab} tasks found.</div>
-            ) : (
-              filteredTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-md">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id={`task-${task.id}`}
-                      checked={task.completed}
-                      onCheckedChange={() => toggleTaskCompletion(task.id)}
-                    />
-                    <div>
-                      <label
-                        htmlFor={`task-${task.id}`}
-                        className={`font-medium ${task.completed ? "line-through text-muted-foreground" : ""}`}
-                      >
-                        {task.title}
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className={getSubjectColor(task.subject)}>
-                          {task.subject}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">Due: {task.dueTime}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {getPriorityIcon(task.priority)}
-
-                    {activeTimer === task.id ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-mono">{formatTime(timerSeconds)}</span>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleTimer(task.id)}>
-                              <Timer className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-
-                          <TooltipContent>
-                            <p>Stop Pomodoro timer</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleTimer(task.id)}>
-                            <Timer className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-
-                        <TooltipContent>
-                          <p>Start 25-minute Pomodoro timer</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit Task</DropdownMenuItem>
-                        <DropdownMenuItem>Change Priority</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">Delete Task</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <CelebrationPopup isVisible={showCelebration} onClose={() => setShowCelebration(false)} />
-    </TooltipProvider>
-  )
+  return <>
+    <Card>
+      <CardHeader><div className="flex items-center justify-between gap-4"><CardTitle>Daily tasks</CardTitle><div className="flex items-center gap-2"><Tabs value={activeTab} onValueChange={setActiveTab}><TabsList><TabsTrigger value="pending">Pending</TabsTrigger><TabsTrigger value="completed">Completed</TabsTrigger></TabsList></Tabs><Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingId(null); setForm(blankTask()) } }}><DialogTrigger asChild><Button size="sm"><Plus data-icon="inline-start" />Add task</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{editingId ? "Edit task" : "Add today’s task"}</DialogTitle></DialogHeader><div className="flex flex-col gap-4"><div className="flex flex-col gap-2"><Label htmlFor="task-title">Task</Label><Input id="task-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="What needs to be done?" /></div><div className="flex flex-col gap-2"><Label htmlFor="task-subject">Subject</Label><Input id="task-subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Subject or project" /></div><div className="grid grid-cols-2 gap-3"><div className="flex flex-col gap-2"><Label>Date</Label><Input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></div><div className="flex flex-col gap-2"><Label>Due time</Label><Input type="time" value={form.dueTime} onChange={(e) => setForm({ ...form, dueTime: e.target.value })} /></div></div><div className="flex flex-col gap-2"><Label>Priority</Label><Select value={form.priority} onValueChange={(value: Priority) => setForm({ ...form, priority: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select></div><Button onClick={saveTask}>{editingId ? "Save changes" : "Create task"}</Button></div></DialogContent></Dialog></div></div></CardHeader>
+      <CardContent>{loading ? <p className="py-8 text-center text-muted-foreground">Loading today’s tasks…</p> : filteredTasks.length === 0 ? <div className="py-8 text-center text-muted-foreground">No {activeTab} tasks for today. Add your first one.</div> : <div className="flex flex-col gap-3">{filteredTasks.map((task) => <div key={task.id} className="flex items-center justify-between gap-3 rounded-md border p-3"><div className="flex min-w-0 items-start gap-3"><Checkbox id={`task-${task.id}`} checked={task.completed} onCheckedChange={() => void updateCompletion(task)} /><div className="min-w-0"><label htmlFor={`task-${task.id}`} className={`font-medium ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</label><div className="mt-1 flex flex-wrap items-center gap-2"><Badge variant="outline">{task.subject}</Badge><span className="text-xs text-muted-foreground">Due {task.dueDate} at {task.dueTime}</span></div></div></div><div className="flex items-center gap-1">{task.priority === "high" ? <Flame className="size-4 text-red-500" aria-label="High priority" /> : task.priority === "medium" ? <Clock className="size-4 text-amber-500" aria-label="Medium priority" /> : null}<Button variant="ghost" size="icon" aria-label="Pomodoro timer" onClick={() => { setActiveTimer(activeTimer === task.id ? null : task.id); setTimerSeconds(25 * 60) }}>{activeTimer === task.id ? <span className="font-mono text-xs">{formatTime(timerSeconds)}</span> : <Timer />}</Button><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Task actions"><MoreHorizontal /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => openEdit(task)}>Edit task</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => void deleteTask(task.id)}><Trash2 data-icon="inline-start" />Delete task</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></div>)}</div>}</CardContent>
+    </Card><CelebrationPopup isVisible={showCelebration} onClose={() => setShowCelebration(false)} />
+  </>
 }
