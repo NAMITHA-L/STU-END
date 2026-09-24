@@ -8,7 +8,10 @@ export async function GET(request: NextRequest) {
     const from = params.get("from")
     const to = params.get("to")
     const collection = await getTasksCollection()
-    const filter = date ? { dueDate: date } : from && to ? { dueDate: { $gte: from, $lte: to } } : {}
+    const overdueBefore = params.get("overdueBefore")
+    const overdue = params.get("overdue") === "true"
+    const todayKey = overdueBefore || new Date().toISOString().slice(0, 10)
+    const filter = overdue ? { dueDate: { $lt: todayKey }, completed: false, skipped: { $ne: true } } : date ? { dueDate: date } : from && to ? { dueDate: { $gte: from, $lte: to } } : {}
     const tasks = await collection.find(filter).sort({ dueDate: 1, dueTime: 1, createdAt: 1 }).toArray()
     return NextResponse.json(tasks.map(serializeTask))
   } catch (error) {

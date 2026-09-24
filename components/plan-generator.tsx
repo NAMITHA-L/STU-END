@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,6 +49,14 @@ export default function PlanGenerator() {
   const [editingSlot, setEditingSlot] = useState<PlanSlot | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
 
+  useEffect(() => {
+    fetch("/api/tasks?date=" + new Date().toLocaleDateString("en-CA"), { cache: "no-store" }).then((response) => response.ok ? response.json() : []).then((tasks: Array<{ subject: string; priority: "high" | "medium" | "low" }>) => {
+      const priority = { high: 5, medium: 3, low: 1 }
+      const unique = Array.from(new Map(tasks.map((task) => [task.subject, task])).values())
+      if (unique.length) setSubjects(unique.map((task, index) => ({ id: `task-${index}-${task.subject}`, name: task.subject, priority: priority[task.priority], color: "bg-primary text-primary-foreground" })))
+    })
+  }, [])
+
   // Smart conflict resolution function
   const findNextAvailableSlot = (desiredStart: string, duration: number, excludeId?: string): string => {
     const timeToMinutes = (time: string) => {
@@ -81,8 +89,8 @@ export default function PlanGenerator() {
       return desiredStart
     }
 
-    let currentTime = Math.max(desiredStartMinutes, 9 * 60)
-    const endOfDay = 22 * 60
+    let currentTime = Math.max(desiredStartMinutes, 0)
+    const endOfDay = 24 * 60
 
     while (currentTime + durationMinutes <= endOfDay) {
       if (isTimeAvailable(currentTime, currentTime + durationMinutes)) {
@@ -167,10 +175,11 @@ export default function PlanGenerator() {
     }
     let startHour = roundedStartMinutes / 60
 
+    let deferredCount = 0
     sortedSubjects.forEach((subject) => {
       const subjectHours = Math.max(0.5, Math.round((subject.priority / totalPriority) * availableHours * 2) / 2)
-
       const endHour = startHour + subjectHours
+      if (endHour * 60 > 23 * 60 + 59) { deferredCount += 1; return }
 
       plan.push({
         id: Date.now().toString() + subject.id,
@@ -186,6 +195,7 @@ export default function PlanGenerator() {
 
     setGeneratedPlan(plan)
     setShowPlanPreview(true)
+    if (deferredCount > 0) toast({ title: `${deferredCount} lower-priority task${deferredCount === 1 ? "" : "s"} deferred`, description: "There is not enough time before midnight. Finish today’s higher-priority work first; deferred work remains available for tomorrow." })
     setIsEditMode(false)
 
     toast({
